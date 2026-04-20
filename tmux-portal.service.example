@@ -1,0 +1,26 @@
+[Unit]
+Description=Tmux Portal - Web-based Tmux Session Manager
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USERNAME
+Group=YOUR_USERNAME
+WorkingDirectory=/path/to/tmux-portal
+ExecStart=/path/to/tmux-portal/tmux-portal
+Restart=always
+RestartSec=10
+Environment="PORT=7777"
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tmux-portal
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,36 @@
+# Binary
+tmux-portal
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Systemd service (contains local paths)
+tmux-portal.service
+
+# Go
+/vendor/
+*.test
+*.prof
+go.work
+go.work.sum
+
+# Test coverage
+coverage.txt
+coverage.out
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+*.code-workspace
+
+# Environment
+.env
+.env.*
