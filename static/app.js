@@ -9,7 +9,8 @@ console.log('Tmux Portal loaded');
 
 // Initialize session update WebSocket
 function initSessionUpdates() {
-    const wsUrl = `ws://${window.location.host}/ws/sessions`;
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws/sessions`;
     sessionUpdateSocket = new WebSocket(wsUrl);
 
     sessionUpdateSocket.onmessage = (event) => {
@@ -113,7 +114,8 @@ function connectToSession(sessionName) {
     const rows = term.rows;
 
     // Connect WebSocket with terminal size
-    const wsUrl = `ws://${window.location.host}/ws?session=${encodeURIComponent(sessionName)}&cols=${cols}&rows=${rows}`;
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${protocol}//${window.location.host}/ws?session=${encodeURIComponent(sessionName)}&cols=${cols}&rows=${rows}`;
     socket = new WebSocket(wsUrl);
 
     socket.onopen = () => {
