@@ -81,7 +81,7 @@ Expose the portal via Cloudflare tunnel:
 cloudflared tunnel --url http://localhost:7777
 ```
 
-Then configure `local.zealhaven.net` to point to the tunnel.
+Then configure your domain to point to the tunnel URL.
 
 ## Configuration
 
