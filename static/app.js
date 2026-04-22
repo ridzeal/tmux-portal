@@ -17,7 +17,7 @@ function initSessionUpdates() {
         try {
             const data = JSON.parse(event.data);
             if (data.type === 'update') {
-                displaySessions(data.Sessions);
+                displaySessions(data.sessions);
             }
         } catch (e) {
             console.error('Failed to parse session update:', e);

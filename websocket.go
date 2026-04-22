@@ -133,6 +133,8 @@ func (tc *TmuxClient) readFromPTY() {
 				}
 				tc.mu.Unlock()
 			}
+			// PTY exited — close the connection to unblock readFromWebSocket
+			tc.close()
 			return
 		}
 
