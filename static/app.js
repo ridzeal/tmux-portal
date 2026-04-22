@@ -3,9 +3,33 @@ let term = null;
 let socket = null;
 let sessionUpdateSocket = null;
 let currentSession = null;
+let sessions = [];
 
-// Debug logging
-console.log('Tmux Portal loaded');
+// Keyboard shortcut handler (shared between document and xterm)
+function handleShortcut(e) {
+    // Alt+N: new session
+    if (e.altKey && e.key === 'n') {
+        e.preventDefault();
+        e.stopPropagation();
+        showCreateModal();
+        return true;
+    }
+    // Alt+ArrowUp/Down: switch between sessions
+    if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && sessions.length > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        const idx = sessions.findIndex(s => s.Name === currentSession);
+        let next;
+        if (e.key === 'ArrowUp') {
+            next = idx <= 0 ? sessions.length - 1 : idx - 1;
+        } else {
+            next = idx >= sessions.length - 1 ? 0 : idx + 1;
+        }
+        connectToSession(sessions[next].Name);
+        return true;
+    }
+    return false;
+}
 
 // Initialize session update WebSocket
 function initSessionUpdates() {
@@ -77,6 +101,10 @@ function initTerminal() {
     });
 
     term.open(terminalContainer);
+    term.attachCustomKeyEventHandler((e) => {
+        if (e.type !== 'keydown') return true;
+        return !handleShortcut(e);
+    });
     term.onData((data) => {
         if (socket && socket.readyState === WebSocket.OPEN) {
             // Encode as UTF-8 bytes, then base64
@@ -95,9 +123,13 @@ function initTerminal() {
 
 // Connect to tmux session via WebSocket
 function connectToSession(sessionName) {
-    // Close existing connection
-    if (socket) {
-        socket.close();
+    // Mark the old socket as intentionally closed (don't tear down terminal)
+    const oldSocket = socket;
+    socket = null;
+    if (oldSocket) {
+        oldSocket.onclose = null;
+        oldSocket.onerror = null;
+        oldSocket.close();
     }
 
     currentSession = sessionName;
@@ -117,11 +149,16 @@ function connectToSession(sessionName) {
     const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/ws?session=${encodeURIComponent(sessionName)}&cols=${cols}&rows=${rows}`;
     socket = new WebSocket(wsUrl);
+    const activeSocket = socket;
 
     socket.onopen = () => {
         console.log('Connected to session:', sessionName);
         term.reset();
         term.focus();
+        // Re-highlight active session in sidebar
+        document.querySelectorAll('.session-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.session === sessionName);
+        });
     };
 
     socket.onmessage = (event) => {
@@ -147,8 +184,8 @@ function connectToSession(sessionName) {
 
     socket.onclose = (event) => {
         console.log('Connection closed:', event.code, event.reason);
-        if (currentSession === sessionName) {
-            // Clean up terminal
+        // Only tear down if this socket is still the current one
+        if (socket === activeSocket) {
             if (term) {
                 term.dispose();
                 term = null;
@@ -188,7 +225,8 @@ async function loadSessions() {
 }
 
 // Display sessions in sidebar
-function displaySessions(sessions) {
+function displaySessions(sessionList) {
+    sessions = sessionList;
     const container = document.getElementById('sessionList');
 
     if (sessions.length === 0) {
@@ -232,8 +270,8 @@ async function createSession() {
 
         if (response.ok) {
             hideCreateModal();
-            loadSessions();
             document.getElementById('sessionName').value = '';
+            connectToSession(name);
         } else {
             const error = await response.json();
             alert('Failed to create session: ' + error.error);
@@ -306,12 +344,16 @@ document.addEventListener('DOMContentLoaded', () => {
     initSessionUpdates();
 });
 
-// Handle Enter key in modal
+// Keyboard shortcuts (only fires when terminal is NOT focused — xterm handles it otherwise)
 document.addEventListener('keydown', (e) => {
+    if (term && term.element?.contains(document.activeElement)) return;
+    if (handleShortcut(e)) return;
+    // Enter: submit session creation
     if (e.key === 'Enter' && document.getElementById('createModal').classList.contains('show')) {
         createSession();
     }
-    if (e.key === 'Escape' && document.getElementById('createModal').classList.contains('show')) {
+    // Escape: close modal
+    if (e.key === 'Escape') {
         hideCreateModal();
     }
 });
