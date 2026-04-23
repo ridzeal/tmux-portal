@@ -1,3 +1,9 @@
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    sidebar.classList.toggle('collapsed');
+    sidebar.addEventListener('transitionend', () => window.dispatchEvent(new Event('resize')), { once: true });
+}
+
 // Terminal instance
 let term = null;
 let socket = null;
